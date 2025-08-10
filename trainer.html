@@ -1,4 +1,614 @@
-const { useState, useEffect, useMemo, useCallback } = React;
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vokabeltrainer Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Scripts for React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      /* Non-color variables */
+      --font-family: 'Nunito', sans-serif;
+      --border-radius: 12px;
+      --transition-speed: 0.3s;
+
+      /* Light Theme Colors */
+      --primary-color: #6C63FF;
+      --primary-hover: #574BFF;
+      --primary-shadow: rgba(108, 99, 255, 0.3);
+      --secondary-color: #FF6584;
+      --background-color: #F8F9FA;
+      --surface-color: #FFFFFF;
+      --text-color: #212529;
+      --light-text-color: #6C757D;
+      --border-color: #DEE2E6;
+      --danger-color: #e74c3c;
+      --danger-background: #fbecec;
+      --correct-color: #2ecc71;
+      --shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+      --shadow-hover: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    body[data-theme='dark'] {
+      --text-color: #E0E0E0;
+      --light-text-color: #A0A0A0;
+      --border-color: #333333;
+    }
+
+    /* --- GLOBAL & RESET --- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: linear-gradient(-45deg, #6C63FF, #FF6584, #36D1DC, #FFD700);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    /* --- ANIMATIONS --- */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes flip {
+      from { transform: rotateY(0deg); }
+      to { transform: rotateY(180deg); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+
+    @keyframes pulse-border {
+      from { box-shadow: 0 0 0 0px var(--correct-color); }
+      to { box-shadow: 0 0 0 4px transparent; }
+    }
+
+    @keyframes progress-animation {
+        from {
+            stroke-dashoffset: 283; /* 2 * pi * 45 */
+        }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* --- VIEW TRANSITIONS --- */
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes slideOutLeft {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(-30px); }
+    }
+
+    .view-enter {
+      animation: slideInRight 0.4s ease-out forwards;
+    }
+
+    .view-exit-active {
+      animation: slideOutLeft 0.4s ease-out forwards;
+    }
+
+    /* --- LAYOUT --- */
+    .app-layout {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 1200px; /* Adjust as needed */
+        height: 95vh;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 15px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        display: flex;
+        overflow: hidden; /* To keep rounded corners with children */
+    }
+
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      background-color: transparent; /* Make it transparent */
+      border-right: 1px solid rgba(255, 255, 255, 0.18); /* Frosted glass border */
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      color: white; /* Text color for sidebar */
+    }
+
+    .sidebar-header {
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .sidebar-section-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+
+    .sidebar-section-item {
+      padding: 0.75rem 1rem;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    .sidebar-section-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .sidebar-section-item.active {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 700;
+    }
+
+    .sidebar-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding-top: 1rem;
+      margin-top: auto; /* Pushes to the bottom */
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
+    }
+    .sidebar-actions .btn {
+      width: 100%;
+    }
+
+    .content-area {
+      flex-grow: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      color: white;
+    }
+
+
+    /* --- GENERAL COMPONENTS --- */
+    .btn {
+        font-family: 'Nunito', sans-serif;
+        font-weight: 700;
+        font-size: 1.2rem;
+        padding: 0.8rem 2.5rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: white;
+        color: #6C63FF;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        background-color: #f0f0f0;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+       background-color: #6C63FF;
+       color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: #574BFF;
+    }
+
+    /* --- MODAL --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: rgba(0, 0, 0, 0.5);
+      padding: 2rem;
+      border-radius: 15px;
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+      color: white;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: var(--light-text-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .form-group input, .modal-content textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .modal-content textarea {
+      min-height: 150px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .modal-info {
+        font-size: 0.85rem;
+        color: var(--light-text-color);
+        margin-top: 1rem;
+        background-color: var(--background-color);
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+
+    /* --- SECTION VIEW --- */
+    .section-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .section-view-title {
+      flex-grow: 1;
+      text-align: center;
+      margin: 0 1rem;
+    }
+    .section-header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .mode-selection {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 0.5rem;
+      border-radius: 50px;
+    }
+
+    .btn-mode {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: none;
+      color: var(--light-text-color);
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+    }
+
+    .btn-mode.active {
+      background: white;
+      color: var(--primary-color);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .btn-mode:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .learning-content {
+      background: transparent;
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* --- WORD LIST --- */
+    .word-list-container {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .word-list-header, .word-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 110px;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .word-list-header {
+      font-weight: 700;
+      border-bottom: 2px solid rgba(255, 255, 255, 0.18);
+      position: sticky;
+      top: -2rem;
+      background: rgba(0, 0, 0, 0.2);
+      z-index: 10;
+      color: white;
+    }
+    .word-list-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .word-list { list-style: none; }
+    .word-item {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+      transition: background-color 0.2s ease-out;
+      color: white;
+    }
+    .word-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    .word-item:last-child { border-bottom: none; }
+
+    .word-text {
+      transition: opacity 0.3s ease-in-out, color 0.3s ease-in-out;
+      opacity: 1;
+    }
+
+    .word-text.hidden {
+      opacity: 0.6;
+      font-style: italic;
+      color: var(--light-text-color);
+    }
+    .word-actions { display: flex; gap: 0.75rem; justify-content: center; }
+    .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s, color 0.2s; }
+    .btn-icon:hover { transform: scale(1.2); }
+    .btn-toggle-vis {
+        font-size: 1.4rem;
+        padding: 0.2rem;
+    }
+    .btn-edit:hover { color: var(--primary-color); }
+    .btn-delete:hover { color: var(--danger-color); }
+
+    /* --- FLASHCARDS --- */
+    .flashcard-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .flashcard-deck { perspective: 1000px; margin-bottom: 1.5rem; }
+    .flashcard {
+      width: 350px;
+      height: 200px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s, opacity 0.3s ease-out;
+      cursor: pointer;
+      opacity: 1;
+    }
+    .flashcard.is-flipped { transform: rotateY(180deg); }
+    .flashcard.is-navigating {
+        opacity: 0;
+        transform: scale(0.95);
+        pointer-events: none;
+    }
+    .flashcard-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      text-align: center;
+    }
+    .flashcard-front { background: white; color: #333; }
+    .flashcard-back { background: var(--primary-color); color: white; transform: rotateY(180deg); }
+    .flashcard-progress { margin-bottom: 1.5rem; color: var(--light-text-color); font-weight: 600; }
+    .flashcard-nav { display: flex; gap: 1rem; }
+
+    /* --- QUIZ & TEST --- */
+    .centered-message { text-align: center; padding: 2rem; color: white; font-weight: 600; }
+    .quiz-container, .test-container { display: flex; flex-direction: column; align-items: center; padding-top: 1rem; }
+    .quiz-progress-bar {
+        height: 5px;
+        background-color: var(--secondary-color);
+        position: absolute;
+        top: 0;
+        left: 0;
+        border-radius: 0 0 5px 0;
+        transition: width 0.3s;
+    }
+    .quiz-header { display: flex; justify-content: space-between; width: 100%; margin-bottom: 2rem; }
+    .quiz-question, .test-question { font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; text-align: center; color: white; }
+    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%; max-width: 500px; }
+    .option-btn { width: 100%; }
+    .option-btn.correct { background: var(--correct-color); border-color: var(--correct-color); color: white; animation: pulse 1s ease-out; }
+    .option-btn.incorrect { background: var(--danger-color); border-color: var(--danger-color); color: white; animation: shake 0.5s; }
+    .option-btn.was-correct {
+      background: var(--surface-color);
+      border-color: var(--correct-color);
+      color: var(--text-color);
+      animation: pulse-border 0.8s ease-out;
+    }
+
+    .test-container form { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+    .test-container input {
+      width: 100%;
+      text-align: center;
+      padding: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+    .test-container .btn { margin-top: 1rem; }
+    .test-progress { color: var(--light-text-color); font-weight: 600; margin-bottom: 1rem; }
+
+
+    /* --- RESULTS --- */
+    .results-screen, .test-results { text-align: center; color: white; }
+    .results-rating {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: white;
+    }
+    .results-chart-container {
+        margin: 1.5rem auto;
+        width: 150px;
+        height: 150px;
+        position: relative;
+    }
+    .results-chart svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+    .chart-circle {
+        fill: none;
+        stroke-width: 10;
+    }
+    .chart-background {
+        stroke: rgba(255, 255, 255, 0.18);
+    }
+    .chart-progress {
+        stroke: var(--secondary-color);
+        stroke-linecap: round;
+        transition: stroke-dashoffset 1s ease-out;
+    }
+    .chart-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: white;
+    }
+    .final-score { font-size: 1.2rem; font-weight: bold; margin-bottom: 2rem; }
+    .results-list { list-style: none; text-align: left; margin-top: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;}
+    .result-item { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .result-item.incorrect { background-color: rgba(231, 76, 60, 0.5); }
+    .user-answer { color: var(--danger-color); font-weight: bold; }
+    .correct-answer { color: var(--correct-color); font-weight: bold; }
+
+    /* --- RESPONSIVENESS --- */
+    @media (max-width: 768px) {
+      .app-container { padding: 1rem; }
+      .dashboard-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+      .dashboard-header-actions { justify-content: center; }
+      .section-view-header {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .section-view-title {
+        order: -1;
+        width: 100%;
+      }
+      .btn-back {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+      }
+      .mode-selection { flex-wrap: wrap; }
+      .quiz-options { grid-template-columns: 1fr; }
+      .flashcard { width: 90vw; max-width: 320px; height: 180px; font-size: 1.5rem; }
+    }
+  </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback } = React;
     const { createRoot } = ReactDOM;
 
     // --- UTILITY FUNCTIONS ---
@@ -567,6 +1177,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
                     ))}
                 </ul>
                 <div className="sidebar-actions">
+                    <a href="main.html" className="btn">Zurück zur Hauptseite</a>
                     <button onClick={onAddSectionClick} className="btn btn-primary">+ Neuer Abschnitt</button>
                     <button onClick={onImportSectionClick} className="btn">Importieren</button>
                     <ThemeToggle theme={theme} onToggle={onToggleTheme} />
@@ -808,3 +1419,7 @@ const { useState, useEffect, useMemo, useCallback } = React;
       const root = createRoot(rootElement);
       root.render(<App />);
     }
+  </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
