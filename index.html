@@ -1,0 +1,1315 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vokabeltrainer Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Scripts for React & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --primary-hover: #357abd;
+      --secondary-color: #50e3c2;
+      --background-color: #f4f7f9;
+      --surface-color: #ffffff;
+      --text-color: #3d4a5c;
+      --light-text-color: #8a96a8;
+      --border-color: #e6eaf0;
+      --danger-color: #e74c3c;
+      --correct-color: #2ecc71;
+      --font-family: 'Nunito', sans-serif;
+      --border-radius: 12px;
+      --shadow: 0 6px 20px rgba(74, 144, 226, 0.15);
+      --transition-speed: 0.3s;
+    }
+
+    /* --- GLOBAL & RESET --- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--background-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    #root {
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    /* --- ANIMATIONS --- */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes flip {
+      from { transform: rotateY(0deg); }
+      to { transform: rotateY(180deg); }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+    
+    @keyframes progress-animation {
+        from {
+            stroke-dashoffset: 283; /* 2 * pi * 45 */
+        }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* --- GENERAL COMPONENTS --- */
+    .app-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .btn {
+      font-family: var(--font-family);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+      background-color: #fff;
+      color: var(--primary-color);
+      border: 2px solid var(--primary-color);
+      white-space: nowrap;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    .btn:active:not(:disabled) {
+      transform: translateY(-1px) scale(0.98);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: var(--primary-hover);
+    }
+
+    /* --- MODAL --- */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background: var(--surface-color);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: var(--light-text-color);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .form-group input, .modal-content textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    
+    .modal-content textarea {
+      min-height: 150px;
+      resize: vertical;
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .modal-info {
+        font-size: 0.85rem;
+        color: var(--light-text-color);
+        margin-top: 1rem;
+        background-color: #f8fafc;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* --- DASHBOARD --- */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    
+    .dashboard-header h1 {
+        flex-grow: 1;
+    }
+
+    .dashboard-header-actions {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .section-card {
+      background: var(--surface-color);
+      padding: 1.5rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+      position: relative;
+      animation: fadeIn 0.4s ease-out backwards;
+    }
+
+    .section-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(74, 144, 226, 0.2);
+    }
+
+    .section-card h2 {
+      color: var(--primary-color);
+      margin-bottom: 0.5rem;
+    }
+
+    .section-card p {
+      color: var(--light-text-color);
+    }
+
+    .btn-delete-section {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--light-text-color);
+      transition: color 0.2s;
+      cursor: pointer;
+    }
+    .btn-delete-section:hover {
+      color: var(--danger-color);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      border: 2px dashed var(--border-color);
+    }
+
+    /* --- SECTION VIEW --- */
+    .section-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .section-view-title {
+      flex-grow: 1;
+      text-align: center;
+      margin: 0 1rem;
+    }
+    .section-header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn-back {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: var(--primary-color);
+      padding: 0;
+    }
+
+    .mode-selection {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      background: var(--surface-color);
+      padding: 0.5rem;
+      border-radius: var(--border-radius);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    .btn-mode {
+      padding: 0.5rem 1rem;
+      border: none;
+      background: none;
+      color: var(--light-text-color);
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+    }
+
+    .btn-mode.active {
+      background: var(--primary-color);
+      color: white;
+      box-shadow: 0 2px 5px rgba(74, 144, 226, 0.3);
+    }
+    .btn-mode:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    .learning-content {
+      background: var(--surface-color);
+      padding: 2rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* --- WORD LIST --- */
+    .word-list-container {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .word-list-header, .word-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr 110px;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+    }
+    .word-list-header {
+      font-weight: 700;
+      border-bottom: 2px solid var(--border-color);
+      position: sticky;
+      top: -2rem;
+      background: var(--surface-color);
+      z-index: 10;
+    }
+    .word-list-header h3 {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .word-list { list-style: none; }
+    .word-item { 
+      border-bottom: 1px solid var(--border-color); 
+      transition: background-color 0.2s ease-out;
+    }
+    .word-item:hover {
+        background-color: #f8fafc;
+    }
+    .word-item:last-child { border-bottom: none; }
+
+    .word-text {
+      transition: opacity 0.3s ease-in-out, color 0.3s ease-in-out;
+      opacity: 1;
+    }
+
+    .word-text.hidden {
+      opacity: 0.6;
+      font-style: italic;
+      color: var(--light-text-color);
+    }
+    .word-actions { display: flex; gap: 0.75rem; justify-content: center; }
+    .btn-icon { background: none; border: none; font-size: 1.2rem; cursor: pointer; transition: transform 0.2s, color 0.2s; }
+    .btn-icon:hover { transform: scale(1.2); }
+    .btn-toggle-vis {
+        font-size: 1.4rem;
+        padding: 0.2rem;
+    }
+    .btn-edit:hover { color: var(--primary-color); }
+    .btn-delete:hover { color: var(--danger-color); }
+
+    /* --- FLASHCARDS --- */
+    .flashcard-container { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .flashcard-deck { perspective: 1000px; margin-bottom: 1.5rem; }
+    .flashcard {
+      width: 350px;
+      height: 200px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s, opacity 0.3s ease-out;
+      cursor: pointer;
+      opacity: 1;
+    }
+    .flashcard.is-flipped { transform: rotateY(180deg); }
+    .flashcard.is-navigating {
+        opacity: 0;
+        transform: scale(0.95);
+        pointer-events: none;
+    }
+    .flashcard-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.8rem;
+      font-weight: 700;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      text-align: center;
+    }
+    .flashcard-front { background: var(--surface-color); color: var(--text-color); }
+    .flashcard-back { background: var(--primary-color); color: white; transform: rotateY(180deg); }
+    .flashcard-progress { margin-bottom: 1.5rem; color: var(--light-text-color); font-weight: 600; }
+    .flashcard-nav { display: flex; gap: 1rem; }
+
+    /* --- QUIZ & TEST --- */
+    .centered-message { text-align: center; padding: 2rem; color: var(--light-text-color); font-weight: 600; }
+    .quiz-container, .test-container { display: flex; flex-direction: column; align-items: center; padding-top: 1rem; }
+    .quiz-progress-bar {
+        height: 5px;
+        background-color: var(--secondary-color);
+        position: absolute;
+        top: 0; 
+        left: 0;
+        border-radius: 0 0 5px 0;
+        transition: width 0.3s;
+    }
+    .quiz-header { display: flex; justify-content: space-between; width: 100%; margin-bottom: 2rem; }
+    .quiz-question, .test-question { font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem; text-align: center; }
+    .quiz-options { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; width: 100%; max-width: 500px; }
+    .option-btn { width: 100%; }
+    .option-btn.correct { background: var(--correct-color); border-color: var(--correct-color); color: white; animation: pulse 1s ease-out; }
+    .option-btn.incorrect { background: var(--danger-color); border-color: var(--danger-color); color: white; animation: shake 0.5s; }
+
+    .test-container form { width: 100%; max-width: 400px; display: flex; flex-direction: column; align-items: center; }
+    .test-container input { width: 100%; text-align: center; }
+    .test-container .btn { margin-top: 1rem; }
+    .test-progress { color: var(--light-text-color); font-weight: 600; margin-bottom: 1rem; }
+
+
+    /* --- RESULTS --- */
+    .results-screen, .test-results { text-align: center; }
+    .results-rating {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+    }
+    .results-chart-container {
+        margin: 1.5rem auto;
+        width: 150px;
+        height: 150px;
+        position: relative;
+    }
+    .results-chart svg {
+        width: 100%;
+        height: 100%;
+        transform: rotate(-90deg);
+    }
+    .chart-circle {
+        fill: none;
+        stroke-width: 10;
+    }
+    .chart-background {
+        stroke: var(--border-color);
+    }
+    .chart-progress {
+        stroke: var(--secondary-color);
+        stroke-linecap: round;
+        transition: stroke-dashoffset 1s ease-out;
+    }
+    .chart-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--secondary-color);
+    }
+    .final-score { font-size: 1.2rem; font-weight: bold; margin-bottom: 2rem; }
+    .results-list { list-style: none; text-align: left; margin-top: 1.5rem; max-width: 500px; margin-left: auto; margin-right: auto;}
+    .result-item { padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .result-item.incorrect { background-color: #fbecec; }
+    .user-answer { color: var(--danger-color); font-weight: bold; }
+    .correct-answer { color: var(--correct-color); font-weight: bold; }
+
+    /* --- RESPONSIVENESS --- */
+    @media (max-width: 768px) {
+      .app-container { padding: 1rem; }
+      .dashboard-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+      .dashboard-header-actions { justify-content: center; }
+      .section-view-header {
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+      .section-view-title {
+        order: -1;
+        width: 100%;
+      }
+      .btn-back {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+      }
+      .mode-selection { flex-wrap: wrap; }
+      .quiz-options { grid-template-columns: 1fr; }
+      .flashcard { width: 90vw; max-width: 320px; height: 180px; font-size: 1.5rem; }
+    }
+  </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useMemo, useCallback } = React;
+    const { createRoot } = ReactDOM;
+
+    // --- UTILITY FUNCTIONS ---
+    const shuffleArray = (array) => {
+      return [...array].sort(() => Math.random() - 0.5);
+    };
+    
+    const getRating = (percentage) => {
+        if (percentage === 100) return "Perfekt! ✨";
+        if (percentage >= 90) return "Hervorragend!";
+        if (percentage >= 75) return "Sehr gut!";
+        if (percentage >= 50) return "Gut gemacht, weiter so!";
+        if (percentage >= 25) return "Da geht noch was!";
+        return "Übung macht den Meister!";
+    };
+
+    // --- HOOKS ---
+    const useLocalStorage = (key, initialValue) => {
+      const [storedValue, setStoredValue] = useState(() => {
+        try {
+          const item = window.localStorage.getItem(key);
+          return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+          console.error(error);
+          return initialValue;
+        }
+      });
+
+      const setValue = (value) => {
+        try {
+          const valueToStore = value instanceof Function ? value(storedValue) : value;
+          setStoredValue(valueToStore);
+          window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      return [storedValue, setValue];
+    };
+
+
+    // --- UI COMPONENTS ---
+    const Modal = ({ isOpen, onClose, children }) => {
+      if (!isOpen) return null;
+
+      return (
+        <div className="modal-overlay" onClick={onClose}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close-btn" onClick={onClose} aria-label="Schließen">&times;</button>
+            {children}
+          </div>
+        </div>
+      );
+    };
+    
+    const ResultsChart = ({ percentage }) => {
+        const radius = 45;
+        const circumference = 2 * Math.PI * radius;
+        const [offset, setOffset] = useState(circumference);
+        
+        useEffect(() => {
+            const progressOffset = circumference - (percentage / 100) * circumference;
+            // Timeout to ensure animation triggers on mount
+            setTimeout(() => setOffset(progressOffset), 100);
+        }, [percentage, circumference]);
+
+        return (
+            <div className="results-chart-container">
+                <svg className="results-chart" viewBox="0 0 100 100">
+                    <circle className="chart-circle chart-background" cx="50" cy="50" r={radius}></circle>
+                    <circle
+                        className="chart-circle chart-progress"
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        strokeDasharray={circumference}
+                        style={{ strokeDashoffset: offset }}
+                    ></circle>
+                </svg>
+                <span className="chart-text">{Math.round(percentage)}%</span>
+            </div>
+        );
+    };
+
+    const AddSectionModal = ({ isOpen, onClose, onAdd }) => {
+      const [name, setName] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (name.trim()) {
+          onAdd(name.trim());
+          setName('');
+          onClose();
+        }
+      };
+
+      return (
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <form onSubmit={handleSubmit}>
+            <h2>Neuen Abschnitt erstellen</h2>
+            <div className="form-group">
+              <label htmlFor="section-name">Name des Abschnitts</label>
+              <input
+                id="section-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="z.B. Englisch Lektion 1"
+                autoFocus
+              />
+            </div>
+            <div className="modal-actions">
+                <button type="button" onClick={onClose} className="btn">Abbrechen</button>
+                <button type="submit" className="btn btn-primary">Erstellen</button>
+            </div>
+          </form>
+        </Modal>
+      );
+    };
+
+    const AddWordModal = ({ isOpen, onClose, onAdd }) => {
+      const [original, setOriginal] = useState('');
+      const [translation, setTranslation] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (original.trim() && translation.trim()) {
+          onAdd(original.trim(), translation.trim());
+          setOriginal('');
+          setTranslation('');
+          onClose();
+        }
+      };
+      
+      return (
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <form onSubmit={handleSubmit}>
+            <h2>Neues Wort hinzufügen</h2>
+            <div className="form-group">
+              <label htmlFor="original-word">Wort</label>
+              <input id="original-word" type="text" value={original} onChange={(e) => setOriginal(e.target.value)} placeholder="z.B. hello" autoFocus />
+            </div>
+            <div className="form-group">
+              <label htmlFor="translated-word">Übersetzung</label>
+              <input id="translated-word" type="text" value={translation} onChange={(e) => setTranslation(e.target.value)} placeholder="z.B. hallo" />
+            </div>
+            <div className="modal-actions">
+                <button type="button" onClick={onClose} className="btn">Abbrechen</button>
+                <button type="submit" className="btn btn-primary">Hinzufügen</button>
+            </div>
+          </form>
+        </Modal>
+      );
+    };
+    
+    const EditWordModal = ({ isOpen, onClose, onSave, word }) => {
+        const [original, setOriginal] = useState('');
+        const [translation, setTranslation] = useState('');
+
+        useEffect(() => {
+            if (word) {
+                setOriginal(word.original);
+                setTranslation(word.translation);
+            }
+        }, [word]);
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            if (original.trim() && translation.trim()) {
+                onSave(word.id, original.trim(), translation.trim());
+                onClose();
+            }
+        };
+
+        if (!word) return null;
+
+        return (
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <form onSubmit={handleSubmit}>
+                    <h2>Wort bearbeiten</h2>
+                    <div className="form-group">
+                        <label htmlFor="edit-original-word">Wort</label>
+                        <input id="edit-original-word" type="text" value={original} onChange={(e) => setOriginal(e.target.value)} autoFocus />
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="edit-translated-word">Übersetzung</label>
+                        <input id="edit-translated-word" type="text" value={translation} onChange={(e) => setTranslation(e.target.value)} />
+                    </div>
+                    <div className="modal-actions">
+                        <button type="button" onClick={onClose} className="btn">Abbrechen</button>
+                        <button type="submit" className="btn btn-primary">Speichern</button>
+                    </div>
+                </form>
+            </Modal>
+        );
+    };
+
+    const ShareModal = ({ section, onClose }) => {
+        const [copied, setCopied] = useState(false);
+
+        const generateShareText = useCallback((sec) => {
+            const header = "[Vokabeltrainer Abschnitt]";
+            const name = `Name: ${sec.name}`;
+            const separator = "---";
+            const wordLines = sec.words.map(w => `${w.original} | ${w.translation}`).join('\n');
+            return [header, name, separator, wordLines].join('\n');
+        }, []);
+
+        if (!section) return null;
+
+        const shareText = generateShareText(section);
+
+        const handleCopy = () => {
+            navigator.clipboard.writeText(shareText).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2500);
+            });
+        };
+
+        return (
+            <Modal isOpen={!!section} onClose={onClose}>
+                <h2>Abschnitt "{section.name}" teilen</h2>
+                <p>Kopiere den folgenden Text und sende ihn an einen Freund.</p>
+                <div className="form-group">
+                    <textarea readOnly value={shareText} onClick={(e) => e.target.select()} aria-label="Text zum Teilen" />
+                </div>
+                <div className="modal-actions">
+                    <button onClick={handleCopy} className="btn btn-primary">
+                        {copied ? 'Kopiert!' : 'Text kopieren'}
+                    </button>
+                </div>
+                <p className="modal-info">Dein Freund kann diesen Text in der App importieren, um eine Kopie deines Abschnitts zu erstellen.</p>
+            </Modal>
+        );
+    };
+
+    const ImportModal = ({ isOpen, onClose, onImport }) => {
+        const [text, setText] = useState('');
+
+        const handleImportClick = () => {
+            if (text.trim()) {
+                onImport(text.trim());
+                setText('');
+                onClose();
+            }
+        };
+
+        return (
+            <Modal isOpen={isOpen} onClose={onClose}>
+                <h2>Abschnitt importieren</h2>
+                <div className="form-group">
+                    <label htmlFor="import-text">Geteilten Text hier einfügen</label>
+                    <textarea
+                        id="import-text"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        placeholder="Füge den kopierten Text aus einem geteilten Abschnitt hier ein..."
+                        autoFocus
+                    />
+                </div>
+                <div className="modal-actions">
+                    <button type="button" onClick={onClose} className="btn">Abbrechen</button>
+                    <button onClick={handleImportClick} className="btn btn-primary">Importieren</button>
+                </div>
+            </Modal>
+        );
+    };
+
+    // --- LEARNING MODE COMPONENTS ---
+    const WordList = ({ section, deleteWord, onEditWord }) => {
+        const [hideOriginals, setHideOriginals] = useState(false);
+        const [hideTranslations, setHideTranslations] = useState(false);
+
+        return (
+            <div className="word-list-container fade-in">
+                <div className="word-list-header">
+                    <h3>
+                        <button onClick={() => setHideOriginals(prev => !prev)} className="btn-icon btn-toggle-vis" aria-label="Alle Wörter anzeigen/verbergen">
+                            {hideOriginals ? '👁️' : '🙈'}
+                        </button>
+                        Wort
+                    </h3>
+                    <h3>
+                         <button onClick={() => setHideTranslations(prev => !prev)} className="btn-icon btn-toggle-vis" aria-label="Alle Übersetzungen anzeigen/verbergen">
+                            {hideTranslations ? '👁️' : '🙈'}
+                        </button>
+                        Übersetzung
+                    </h3>
+                    <h3>Aktionen</h3>
+                </div>
+                <ul className="word-list">
+                    {section.words.map(word => (
+                        <li key={word.id} className="word-item">
+                            <span className={`word-text ${hideOriginals ? 'hidden' : ''}`}>
+                                {hideOriginals ? '...' : word.original}
+                            </span>
+                            <span className={`word-text ${hideTranslations ? 'hidden' : ''}`}>
+                                {hideTranslations ? '...' : word.translation}
+                            </span>
+                            <div className="word-actions">
+                                <button onClick={() => onEditWord(word)} className="btn-icon btn-edit" aria-label="Wort bearbeiten">
+                                    ✏️
+                                </button>
+                                <button onClick={() => deleteWord(word.id)} className="btn-icon btn-delete" aria-label="Wort löschen">
+                                    &#x1F5D1;
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        );
+    };
+
+    const Flashcards = ({ words }) => {
+      const [currentIndex, setCurrentIndex] = useState(0);
+      const [isFlipped, setIsFlipped] = useState(false);
+      const [isNavigating, setIsNavigating] = useState(false);
+
+      const navigate = (direction) => {
+          if (isNavigating) return;
+
+          setIsNavigating(true);
+          if (isFlipped) {
+            setIsFlipped(false);
+          }
+
+          setTimeout(() => {
+              setCurrentIndex(prev => {
+                  if (direction === 'next') {
+                      return (prev + 1) % words.length;
+                  } else {
+                      return (prev - 1 + words.length) % words.length;
+                  }
+              });
+              setIsNavigating(false);
+          }, 300);
+      };
+
+      const currentWord = words[currentIndex];
+
+      return (
+        <div className="flashcard-container fade-in">
+          <div className="flashcard-deck">
+              <div 
+                  className={`flashcard ${isFlipped ? 'is-flipped' : ''} ${isNavigating ? 'is-navigating' : ''}`} 
+                  onClick={() => !isNavigating && setIsFlipped(!isFlipped)}
+              >
+                <div className="flashcard-face flashcard-front">{currentWord.original}</div>
+                <div className="flashcard-face flashcard-back">{currentWord.translation}</div>
+              </div>
+          </div>
+          <div className="flashcard-progress">{currentIndex + 1} / {words.length}</div>
+          <div className="flashcard-nav">
+            <button onClick={() => navigate('prev')} className="btn">Zurück</button>
+            <button onClick={() => navigate('next')} className="btn">Weiter</button>
+          </div>
+        </div>
+      );
+    };
+
+
+    const Quiz = ({ words, onFinish }) => {
+        const questions = useMemo(() => {
+            if (words.length < 4) return [];
+            return shuffleArray(words).map((word) => {
+                const wrongOptions = shuffleArray(words.filter((w) => w.id !== word.id)).slice(0, 3).map((w) => w.translation);
+                const options = shuffleArray([word.translation, ...wrongOptions]);
+                return {
+                    question: word.original,
+                    correctAnswer: word.translation,
+                    options
+                };
+            });
+        }, [words]);
+
+        const [currentQ, setCurrentQ] = useState(0);
+        const [score, setScore] = useState(0);
+        const [selected, setSelected] = useState(null);
+        const [isCorrect, setIsCorrect] = useState(null);
+
+        const handleAnswer = (answer) => {
+            if(selected) return;
+            setSelected(answer);
+            if (answer === questions[currentQ].correctAnswer) {
+                setScore(s => s + 1);
+                setIsCorrect(true);
+            } else {
+                setIsCorrect(false);
+            }
+            setTimeout(() => {
+                setSelected(null);
+                setIsCorrect(null);
+                setCurrentQ(q => q + 1);
+            }, 1500);
+        };
+
+        if (words.length < 4) {
+            return <div className="centered-message">Füge mindestens 4 Wörter hinzu, um das Quiz zu starten.</div>;
+        }
+
+        if (currentQ >= questions.length) {
+            const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
+            const rating = getRating(percentage);
+            return (
+                <div className="results-screen fade-in">
+                    <h2 className="results-rating">{rating}</h2>
+                    <ResultsChart percentage={percentage} />
+                    <p className="final-score">Dein Ergebnis: {score} von {questions.length}</p>
+                    <button onClick={onFinish} className="btn btn-primary">Zurück zum Abschnitt</button>
+                </div>
+            );
+        }
+        
+        const { question, options, correctAnswer } = questions[currentQ];
+
+        return (
+            <div className="quiz-container fade-in">
+                <div className="quiz-progress-bar" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
+                <div className="quiz-header">
+                    <p>Frage {currentQ + 1} von {questions.length}</p>
+                    <p>Punkte: {score}</p>
+                </div>
+                <h2 className="quiz-question">{question}</h2>
+                <div className="quiz-options">
+                    {options.map((option, index) => (
+                        <button 
+                            key={`${option}-${index}`} 
+                            onClick={() => handleAnswer(option)}
+                            className={`btn option-btn 
+                                ${selected && option === correctAnswer ? 'correct' : ''}
+                                ${selected && option !== correctAnswer && option === selected ? 'incorrect' : ''}
+                            `}
+                            disabled={!!selected}
+                        >
+                            {option}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
+    const Test = ({ words, onFinish }) => {
+        const questions = useMemo(() => shuffleArray(words), [words]);
+        const [currentQ, setCurrentQ] = useState(0);
+        const [userAnswers, setUserAnswers] = useState([]);
+        const [currentAnswer, setCurrentAnswer] = useState('');
+        const [isFinished, setIsFinished] = useState(false);
+
+        const handleSubmit = (e) => {
+            e.preventDefault();
+            const newAnswers = [...userAnswers, currentAnswer];
+            setUserAnswers(newAnswers);
+            setCurrentAnswer('');
+
+            if (currentQ < questions.length - 1) {
+                setCurrentQ(q => q + 1);
+            } else {
+                setIsFinished(true);
+            }
+        };
+        
+        if (isFinished) {
+            const results = questions.map((q, i) => ({
+                question: q.original,
+                correctAnswer: q.translation,
+                userAnswer: userAnswers[i],
+                isCorrect: userAnswers[i].toLowerCase().trim() === q.translation.toLowerCase().trim()
+            }));
+            const incorrectAnswers = results.filter(r => !r.isCorrect);
+            const correctCount = results.length - incorrectAnswers.length;
+            const percentage = results.length > 0 ? (correctCount / results.length) * 100 : 0;
+            const rating = getRating(percentage);
+
+            return (
+                <div className="test-results fade-in">
+                    <h2 className="results-rating">{rating}</h2>
+                    <ResultsChart percentage={percentage} />
+                    <p className="final-score">Du hast {correctCount} von {results.length} richtig beantwortet.</p>
+                    {incorrectAnswers.length > 0 && <h3>Deine Fehler:</h3>}
+                    <ul className="results-list">
+                        {incorrectAnswers.map((res, i) => (
+                            <li key={i} className="result-item incorrect">
+                                <strong>{res.question}</strong>
+                                <div>Deine Antwort: <span className="user-answer">{res.userAnswer || 'Keine Angabe'}</span></div>
+                                <div>Richtige Antwort: <span className="correct-answer">{res.correctAnswer}</span></div>
+                            </li>
+                        ))}
+                    </ul>
+                    <button onClick={onFinish} className="btn btn-primary">Zurück zum Abschnitt</button>
+                </div>
+            );
+        }
+
+        return (
+            <div className="test-container fade-in">
+                 <div className="quiz-progress-bar" style={{ width: `${((currentQ + 1) / questions.length) * 100}%` }}></div>
+                 <p className="test-progress">Frage {currentQ + 1} von {questions.length}</p>
+                 <h2 className="test-question">{questions[currentQ].original}</h2>
+                 <form onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <input 
+                            type="text" 
+                            value={currentAnswer} 
+                            onChange={(e) => setCurrentAnswer(e.target.value)}
+                            placeholder="Gib die Übersetzung ein..."
+                            autoFocus
+                        />
+                    </div>
+                    <button type="submit" className="btn">Nächste Frage</button>
+                 </form>
+            </div>
+        );
+    };
+
+    // --- VIEW COMPONENTS ---
+    const Dashboard = ({ sections, onSelectSection, onAddSection, onDeleteSection, onImportSection }) => {
+        return (
+            <div className="dashboard">
+                <div className="dashboard-header">
+                    <h1>Meine Vokabelabschnitte</h1>
+                    <div className="dashboard-header-actions">
+                        <button onClick={onImportSection} className="btn">Importieren</button>
+                        <button onClick={onAddSection} className="btn btn-primary">+ Neuer Abschnitt</button>
+                    </div>
+                </div>
+                {sections.length === 0 ? (
+                    <div className="empty-state">
+                        <p>Du hast noch keine Abschnitte erstellt.</p>
+                        <p>Klicke auf "+ Neuer Abschnitt" oder "Importieren", um zu beginnen!</p>
+                    </div>
+                ) : (
+                    <div className="section-grid">
+                        {sections.map(section => (
+                            <div key={section.id} className="section-card" onClick={() => onSelectSection(section.id)}>
+                                <button className="btn-delete-section" onClick={(e) => { e.stopPropagation(); onDeleteSection(section.id); }}>&times;</button>
+                                <h2>{section.name}</h2>
+                                <p>{section.words.length} {section.words.length === 1 ? 'Wort' : 'Wörter'}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const SectionView = ({ section, onBack, onAddWord, onDeleteWord, onEditWord, onShare }) => {
+        const [mode, setMode] = useState('list');
+
+        const renderLearningMode = () => {
+            if (!section || section.words.length === 0) {
+                return (
+                    <div className="empty-state">
+                        <p>Dieser Abschnitt hat noch keine Wörter.</p>
+                        <p>Füge dein erstes Wort hinzu!</p>
+                    </div>
+                );
+            }
+
+            switch (mode) {
+                case 'list': return <WordList section={section} deleteWord={onDeleteWord} onEditWord={onEditWord} />;
+                case 'flashcards': return <Flashcards words={section.words} />;
+                case 'quiz': return <Quiz words={section.words} onFinish={() => setMode('list')} />;
+                case 'test': return <Test words={section.words} onFinish={() => setMode('list')} />;
+                default: return null;
+            }
+        };
+        
+        return (
+            <div className="section-view">
+                <div className="section-view-header">
+                    <button onClick={onBack} className="btn-back">&larr; Zurück</button>
+                    <h1 className="section-view-title">{section.name}</h1>
+                    <div className="section-header-actions">
+                        <button onClick={onAddWord} className="btn btn-primary">+ Wort</button>
+                        <button onClick={onShare} className="btn">Teilen</button>
+                    </div>
+                </div>
+                <div className="mode-selection">
+                    <button onClick={() => setMode('list')} className={`btn-mode ${mode === 'list' ? 'active' : ''}`}>Liste</button>
+                    <button onClick={() => setMode('flashcards')} className={`btn-mode ${mode === 'flashcards' ? 'active' : ''}`} disabled={section.words.length === 0}>Karteikarten</button>
+                    <button onClick={() => setMode('quiz')} className={`btn-mode ${mode === 'quiz' ? 'active' : ''}`} disabled={section.words.length < 4}>Quiz</button>
+                    <button onClick={() => setMode('test')} className={`btn-mode ${mode === 'test' ? 'active' : ''}`} disabled={section.words.length === 0}>Test</button>
+                </div>
+                <div className="learning-content">
+                    {renderLearningMode()}
+                </div>
+            </div>
+        );
+    };
+
+
+    // --- MAIN APP COMPONENT ---
+    const App = () => {
+        const [sections, setSections] = useLocalStorage('vocab-sections', []);
+        const [view, setView] = useState('dashboard');
+        const [activeSectionId, setActiveSectionId] = useState(null);
+
+        // Modal states
+        const [isAddSectionModalOpen, setAddSectionModalOpen] = useState(false);
+        const [isAddWordModalOpen, setAddWordModalOpen] = useState(false);
+        const [isEditModalOpen, setEditModalOpen] = useState(false);
+        const [wordToEdit, setWordToEdit] = useState(null);
+        const [isImportModalOpen, setImportModalOpen] = useState(false);
+        const [sectionToShare, setSectionToShare] = useState(null);
+
+        const activeSection = useMemo(() => sections.find(s => s.id === activeSectionId), [sections, activeSectionId]);
+
+        const handleAddSection = (name) => {
+            const newSection = { id: crypto.randomUUID(), name, words: [] };
+            setSections(prev => [...prev, newSection]);
+        };
+
+        const handleDeleteSection = (id) => {
+            if (window.confirm("Bist du sicher, dass du diesen Abschnitt und alle darin enthaltenen Wörter löschen möchtest?")) {
+                setSections(prev => prev.filter(s => s.id !== id));
+            }
+        };
+
+        const handleAddWord = (original, translation) => {
+            if (!activeSectionId) return;
+            const newWord = { id: crypto.randomUUID(), original, translation };
+            setSections(prev => prev.map(s => 
+                s.id === activeSectionId ? { ...s, words: [...s.words, newWord] } : s
+            ));
+        };
+            
+        const handleDeleteWord = (wordId) => {
+            if (!activeSectionId) return;
+            setSections(prev => prev.map(s => 
+                s.id === activeSectionId 
+                ? { ...s, words: s.words.filter(w => w.id !== wordId) } 
+                : s
+            ));
+        };
+        
+        const handleOpenEditModal = (word) => {
+            setWordToEdit(word);
+            setEditModalOpen(true);
+        };
+        
+        const handleSaveEditedWord = (wordId, newOriginal, newTranslation) => {
+            if (!activeSectionId) return;
+            setSections(prev => prev.map(s => {
+                if (s.id !== activeSectionId) return s;
+                const updatedWords = s.words.map(w => 
+                    w.id === wordId ? { ...w, original: newOriginal, translation: newTranslation } : w
+                );
+                return { ...s, words: updatedWords };
+            }));
+        };
+
+        const handleImportFromText = (text) => {
+            try {
+                const lines = text.trim().split(/\r?\n/);
+                if (lines.length < 3) throw new Error("Text ist zu kurz oder hat ein falsches Format.");
+                
+                if (lines[0].trim() !== "[Vokabeltrainer Abschnitt]") throw new Error("Keine gültigen Import-Daten (falscher Header).");
+                
+                const nameLine = lines[1];
+                if (!nameLine || !nameLine.startsWith('Name: ')) throw new Error("Abschnittsname nicht gefunden.");
+                const name = nameLine.substring(6).trim();
+
+                if (lines[2].trim() !== '---') throw new Error("Trennlinie nicht gefunden.");
+                
+                if (!name) throw new Error("Abschnittsname ist leer.");
+
+                const wordLines = lines.slice(3);
+                
+                const words = wordLines.map(line => {
+                    if (line.trim() === '') return null;
+                    const parts = line.split(' | ');
+                    if (parts.length !== 2 || !parts[0].trim() || !parts[1].trim()) {
+                        console.warn(`Skipping invalid word line: "${line}"`);
+                        return null;
+                    }
+                    return { original: parts[0].trim(), translation: parts[1].trim() };
+                }).filter(Boolean);
+
+                const newSection = {
+                    id: crypto.randomUUID(),
+                    name: name,
+                    words: words.map(w => ({ ...w, id: crypto.randomUUID() }))
+                };
+
+                setSections(prev => [...prev, newSection]);
+                alert(`Der Abschnitt "${name}" wurde erfolgreich importiert!`);
+
+            } catch (error) {
+                console.error("Fehler beim Import:", error);
+                alert(`Import fehlgeschlagen: ${error.message}`);
+            }
+        };
+
+        const handleSelectSection = (id) => {
+            setActiveSectionId(id);
+            setView('section');
+        };
+
+        const handleBackToDashboard = () => {
+            setActiveSectionId(null);
+            setView('dashboard');
+        };
+
+        return (
+            <div className="app-container">
+                <AddSectionModal 
+                    isOpen={isAddSectionModalOpen}
+                    onClose={() => setAddSectionModalOpen(false)}
+                    onAdd={handleAddSection}
+                />
+                <ImportModal
+                    isOpen={isImportModalOpen}
+                    onClose={() => setImportModalOpen(false)}
+                    onImport={handleImportFromText}
+                />
+                <EditWordModal 
+                    isOpen={isEditModalOpen}
+                    onClose={() => setEditModalOpen(false)}
+                    onSave={handleSaveEditedWord}
+                    word={wordToEdit}
+                />
+                {activeSection && (
+                    <AddWordModal 
+                        isOpen={isAddWordModalOpen}
+                        onClose={() => setAddWordModalOpen(false)}
+                        onAdd={handleAddWord}
+                    />
+                )}
+                <ShareModal 
+                    section={sectionToShare}
+                    onClose={() => setSectionToShare(null)}
+                />
+
+                {view === 'dashboard' ? (
+                    <Dashboard 
+                        sections={sections}
+                        onSelectSection={handleSelectSection}
+                        onAddSection={() => setAddSectionModalOpen(true)}
+                        onDeleteSection={handleDeleteSection}
+                        onImportSection={() => setImportModalOpen(true)}
+                    />
+                ) : activeSection ? (
+                    <SectionView 
+                        section={activeSection}
+                        onBack={handleBackToDashboard}
+                        onAddWord={() => setAddWordModalOpen(true)}
+                        onDeleteWord={handleDeleteWord}
+                        onEditWord={handleOpenEditModal}
+                        onShare={() => setSectionToShare(activeSection)}
+                    />
+                ) : null}
+            </div>
+        );
+    };
+
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      const root = createRoot(rootElement);
+      root.render(<App />);
+    }
+  </script>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
